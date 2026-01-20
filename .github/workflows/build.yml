@@ -1,0 +1,26 @@
+name: Build ZenFocus Python
+
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install & Build
+      run: |
+        pip install -r requirements.txt
+        pip install pyinstaller
+        # Get location of customtkinter to bundle it
+        $p = python -c "import site; print(site.getsitepackages()[1])"
+        pyinstaller --noconsole --onefile --name ZenFocus --clean --add-data "$p\customtkinter;customtkinter\" main.py
+
+    - name: Send to Telegram
+      run: |
+        curl -v -F "chat_id=${{ secrets.TELEGRAM_TO }}" -F document=@"dist/ZenFocus.exe" https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendDocument
